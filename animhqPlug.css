@@ -1,0 +1,111 @@
+#custom-tab {
+    margin-top: 30px !important;
+}
+
+.animhqPostHeader {
+    padding: 5px 15px;
+}
+
+.animhq_addButton:hover {
+    cursor: pointer;
+    background-color: #0a4b78;
+}
+
+
+.animhq_addButton {
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #135e96;
+    color: white;
+    font-weight: bold;
+}
+
+.animhq_Actions {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.animhq_Season_tab,
+.animhq_Episode_tab {
+    width: 100%;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+.animhq_Season_tab {
+    border: 1px solid orange;
+}
+
+.animhq_Episode_tab {
+    border: 1px solid #1e94ee;
+}
+.animhq_Episode_tab .animhq_Episode_header {
+    border-bottom: 1px solid #1e94ee;
+    background-color: #1e94ee;
+}
+.animhq_Season_tab .animhq_Season_header {
+    border-bottom: 1px solid orange;
+    background-color: orange;
+}
+.animhq_Season_tab .animhq_Season_header,
+.animhq_Episode_tab .animhq_Episode_header {
+    
+    margin: 0px;
+    padding: 5px 15px;
+    display: flex;
+    flex-direction: row;
+    border-radius: 5px;
+    justify-content: space-between;
+    align-items: center;
+}
+.animhq_Season_tab .animhq_Season_body {
+    padding: 20px;
+    display: block;
+}
+
+.animhq_Episode_body {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    gap: 5px;
+}
+
+.dropandInput {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.dropandInput input {
+    margin-left: 10px;
+}
+
+.animhq_DropdownButton {
+    font-size: 12px;
+    font-weight: bold;
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    margin-right: 5px;
+    cursor: pointer;
+}
+
+.animhq_Open {
+    transform: rotate(-90deg);
+}
+
+.animhq_DropdownButton:hover {
+    cursor: pointer;
+}
+
+.animhq_ClosedBody {
+    display: none !important;
+}
+
+.animhq_Season_body_fields {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+}
