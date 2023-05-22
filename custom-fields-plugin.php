@@ -206,13 +206,13 @@ function render_custom_tab_fields() {
             </div>
             <div class="inside">
                 <div class="animhq_Episode_body">
-                    <img src="<?php  echo $movie->cover ?>" width="100" />
+                    <?php if($movie) { ?><img src="<?php  echo($movie->cover); ?>" width="100" /> <?php } ?>
                     <Label>Movie Cover:</Label>
-                    <input type="hidden" name="movie[id]" value="<?=$movie->id?>" />
-                    <input type="hidden" name="movie[oldcover]" value="<?=$movie->cover?>" />
+                    <input type="hidden" name="movie[id]" value="<?php echo($movie ? $movie->id : "");?>" />
+                    <input type="hidden" name="movie[oldcover]" value="<?php echo($movie ? $movie->cover:"") ?>" />
                     <input type="file" name="movie[cover]" accept="image/*" />
-                    <input type="text" name="movie[quality]" value="<?php echo $movie->quality; ?>" placeholder="Movie Quality" />
-                    <input type="text" name="movie[video]" value="<?php echo $movie->video; ?>" placeholder="Movie video URL" />
+                    <input type="text" name="movie[quality]" value="<?php echo($movie ? $movie->quality : ""); ?>" placeholder="Movie Quality" />
+                    <input type="text" name="movie[video]" value="<?php echo($movie ? $movie->video: ""); ?>" placeholder="Movie video URL" />
                 </div>
             </div>
         </div>
