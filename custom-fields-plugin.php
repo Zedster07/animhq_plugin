@@ -24,6 +24,7 @@ try {
 
 $seasons_table_name = 'seasons';
 $episodes_table_name = 'episodes';
+$movies_table_name = 'movies';
 
 $charset_collate = $wpdb->get_charset_collate();
 
@@ -45,6 +46,16 @@ $seasons_table_sql = "CREATE TABLE IF NOT EXISTS $seasons_table_name (
     name VARCHAR(255) NOT NULL,
     serieId INT(11) UNSIGNED NOT NULL,
     sorder INT(11) UNSIGNED NOT NULL,
+    cover VARCHAR(255) NOT NULL,
+    PRIMARY KEY (id)
+) $charset_collate;";
+$pdo->exec($seasons_table_sql);
+
+$seasons_table_sql = "CREATE TABLE IF NOT EXISTS $movies_table_name (
+    id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+    postId INT(11) UNSIGNED NOT NULL,
+    quality varchar(255) NOT NULL,
+    video varchar(2500) NOT NULL,
     cover VARCHAR(255) NOT NULL,
     PRIMARY KEY (id)
 ) $charset_collate;";
@@ -88,8 +99,8 @@ function render_custom_tab_fields() {
         $maxEIds = $stmt->fetch(PDO::FETCH_ASSOC)['id'];
     } 
     
-    
     ?>
+    <?php if($post->post_type == "serie"){?>
     <div id="custom-tab" class="postbox postboxanimhhq" >
         <div class="postbox-header animhqPostHeader">
             <h2 class="hndle"><span>Seasons & Episodes</span></h2>
@@ -132,7 +143,7 @@ function render_custom_tab_fields() {
                                 <input type="text" name="seasons[<?php echo $season_id; ?>][order]" value="<?php echo $season_order; ?>" placeholder="Season Order" />
                                 <Label>Season Cover:</Label>
                                 <input type="file" name="seasons[<?php echo $season_id; ?>][cover]" accept="image/*" />
-                            <img src="<?php  echo $season_cover ?>" width="100" />
+                                <img src="<?php  echo $season_cover ?>" width="100" />
                             </div>
                             <h3>Episodes:</h3>
                             
@@ -180,7 +191,32 @@ function render_custom_tab_fields() {
             ?>
         </div>
     </div>
-    <?php
+    <?php } else if ($post->post_type == "movie") { 
+        
+        $query = "SELECT * FROM movies WHERE postId = :post_id";
+        $stmt = $pdo->prepare($query);
+        $stmt->bindParam(':post_id', $post->ID, PDO::PARAM_INT);
+        $stmt->execute();
+        $movie = $stmt->fetch(PDO::FETCH_OBJ);
+
+        ?>
+        <div id="custom-tab" class="postbox postboxanimhhq" >
+            <div class="postbox-header animhqPostHeader">
+                <h2 class="hndle"><span>Movie Details</span></h2>
+            </div>
+            <div class="inside">
+                <div class="animhq_Episode_body">
+                    <img src="<?php  echo $movie->cover ?>" width="100" />
+                    <Label>Movie Cover:</Label>
+                    <input type="hidden" name="movie[id]" value="<?=$movie->id?>" />
+                    <input type="hidden" name="movie[oldcover]" value="<?=$movie->cover?>" />
+                    <input type="file" name="movie[cover]" accept="image/*" />
+                    <input type="text" name="movie[quality]" value="<?php echo $movie->quality; ?>" placeholder="Movie Quality" />
+                    <input type="text" name="movie[video]" value="<?php echo $movie->video; ?>" placeholder="Movie video URL" />
+                </div>
+            </div>
+        </div>
+    <?php }
 }
 
 // Enqueue scripts and styles for the custom tab
@@ -205,6 +241,15 @@ function checkExistingEpisode($eid) {
     $query = "SELECT * FROM episodes where id = :season_id";
     $stmt = $pdo->prepare($query);
     $stmt->bindParam(':season_id', $eid, PDO::PARAM_INT);
+    $stmt->execute();
+    if($stmt->rowCount() > 0) return true;
+    return false;
+}
+function checkExistingMovie($mid) {
+    global $wpdb, $pdo;
+    $query = "SELECT * FROM movies where id = :movie_id";
+    $stmt = $pdo->prepare($query);
+    $stmt->bindParam(':movie_id', $mid, PDO::PARAM_INT);
     $stmt->execute();
     if($stmt->rowCount() > 0) return true;
     return false;
@@ -316,6 +361,57 @@ function save_season_episode_data($post_id) {
                     }
                 }
             
+        }
+    }
+
+    if(isset($_POST['movie'])) {
+        $movie = $_POST['movie'];
+        $movie_cover = '';
+        
+        if (isset($_FILES['movie']) && isset($_FILES['movie']['tmp_name']['cover'])) {
+            $file = $_FILES['movie']['tmp_name']['cover'];
+            $ext = explode('/' , $_FILES['movie']['type']['cover'])[1];
+            if (!empty($file) && file_exists($file)) {
+                $tmpfile = $file;
+                $file = explode('.',$file)[0];
+                $upload_dir = wp_upload_dir();
+                $target_dir = $upload_dir['path'] . '/';
+                $target_file = $target_dir . basename($file).'.'.$ext;
+            
+                // Generate a unique filename
+                $unique_filename = wp_unique_filename($target_dir, basename($target_file));
+            
+                // Set the final file path
+                $target_file = $target_dir . $unique_filename;
+                
+                // Move the uploaded file to the target location
+                if (move_uploaded_file($tmpfile, $target_file)) {
+                    // Set the season cover value to the target file path
+                    $movie_cover = $upload_dir['url'] . '/' . $unique_filename;
+                }
+            }
+        }
+
+        if($movie_cover == '') $movie_cover = $movie['oldcover'];
+
+        if (checkExistingMovie($movie['id'])) {
+             
+            $query = "UPDATE movies SET cover=:cover, video = :video, quality = :quality WHERE id = :movie_id";
+            $stmt = $pdo->prepare($query);
+            $stmt->bindParam(':cover', $movie_cover, PDO::PARAM_STR);
+            $stmt->bindParam(':quality', $movie['quality'], PDO::PARAM_STR);
+            $stmt->bindParam(':video', $movie['video'], PDO::PARAM_STR);
+            $stmt->bindParam(':movie_id', $movie['id'], PDO::PARAM_INT);
+            $stmt->execute();
+
+        } else {
+            $query = "INSERT INTO movies (postId, video, quality , cover) VALUES (:postId ,:video, :quality, :cover)";
+            $stmt = $pdo->prepare($query);
+            $stmt->bindParam(':video', $movie['video'], PDO::PARAM_STR);
+            $stmt->bindParam(':postId', $post_id, PDO::PARAM_INT);
+            $stmt->bindParam(':quality', $movie['quality'], PDO::PARAM_STR);
+            $stmt->bindParam(':cover', $movie_cover, PDO::PARAM_STR);
+            $stmt->execute();   
         }
     }
 }
