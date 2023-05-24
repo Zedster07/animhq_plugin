@@ -25,14 +25,54 @@ try {
 $seasons_table_name = 'seasons';
 $episodes_table_name = 'episodes';
 $movies_table_name = 'movies';
+$usersScreens_table_name = 'screens';
+$loggins_table_name = 'loggins';
+$plans_table_name = 'ahq_plans';
 
 $charset_collate = $wpdb->get_charset_collate();
+
+
+$episodes_table_sql = "CREATE TABLE IF NOT EXISTS $plans_table_name (
+    id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+    plan_name VARCHAR(255),
+    screens Int(11),
+    candownload boolean,
+    quality_720p boolean,
+    quality_1080 boolean,
+    quality_2k boolean,
+    quality_4k boolean,
+    PRIMARY KEY (id)
+) $charset_collate;";
+$pdo->exec($episodes_table_sql);
+
+$episodes_table_sql = "CREATE TABLE IF NOT EXISTS $loggins_table_name (
+    id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+    username VARCHAR(255),
+    user_id Int(11),
+    ipaddress varchar(255),
+    PRIMARY KEY (id)
+) $charset_collate;";
+$pdo->exec($episodes_table_sql);
+
+$episodes_table_sql = "CREATE TABLE IF NOT EXISTS $usersScreens_table_name (
+    id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+    username VARCHAR(255),
+    user_id Int(11),
+    screens INT(11),
+    subscriptionId INT(11),
+    PRIMARY KEY (id)
+) $charset_collate;";
+$pdo->exec($episodes_table_sql);
 
 // Create episodes table
 $episodes_table_sql = "CREATE TABLE IF NOT EXISTS $episodes_table_name (
     id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
-    video VARCHAR(255) NOT NULL,
+    video_720 varchar(2500),
+    video_1080 varchar(2500),
+    video_4k varchar(2500),
+    video_2k varchar(2500),
+    isFree boolean,
     seasonId INT(11) UNSIGNED NOT NULL,
     eorder INT(11) UNSIGNED NOT NULL,
     cover VARCHAR(255) NOT NULL,
@@ -55,7 +95,11 @@ $seasons_table_sql = "CREATE TABLE IF NOT EXISTS $movies_table_name (
     id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
     postId INT(11) UNSIGNED NOT NULL,
     quality varchar(255) NOT NULL,
-    video varchar(2500) NOT NULL,
+    isFree boolean,
+    video_720 varchar(2500),
+    video_1080 varchar(2500),
+    video_4k varchar(2500),
+    video_2k varchar(2500),
     cover VARCHAR(255) NOT NULL,
     PRIMARY KEY (id)
 ) $charset_collate;";
@@ -97,6 +141,15 @@ function render_custom_tab_fields() {
     $rowCount = $stmt->rowCount();
     if($rowCount > 0) {
         $maxEIds = $stmt->fetch(PDO::FETCH_ASSOC)['id'];
+    } 
+
+
+    $query = "SELECT id FROM ahq_plans order by id DESC LIMIT 1";
+    $stmt = $pdo->prepare($query);
+    $stmt->execute();
+    $rowCount = $stmt->rowCount();
+    if($rowCount > 0) {
+        $maxPIds = $stmt->fetch(PDO::FETCH_ASSOC)['id'];
     } 
     
     ?>
@@ -146,7 +199,7 @@ function render_custom_tab_fields() {
                                 <img src="<?php  echo $season_cover ?>" width="100" />
                             </div>
                             <h3>Episodes:</h3>
-                            
+                            <div class="animhq_Season_body_episodes">
                             <?php
                             // Retrieve episodes for the current season
                             $query = "SELECT * FROM episodes WHERE seasonId = :season_id";
@@ -161,21 +214,33 @@ function render_custom_tab_fields() {
                                     $episode_name = $episode->name;
                                     $episode_order = $episode->eorder;
                                     $episode_quality = $episode->cover;
-                                    $episode_video = $episode->video;
+                                    $episode_video_720 = $episode->video_720;
+                                    $episode_video_1080 = $episode->video_1080;
+                                    $episode_video_2k = $episode->video_2k;
+                                    $episode_video_4k = $episode->video_4k;
+                                    $episode_isFree = $episode->isFree;
 
                                     ?>
                                     <div class="animhq_Episode_tab" season="<?php echo $season_id; ?>">
                                          <div class="animhq_Episode_header">
                                             <span class="dropandInput">
-                                            <div class="animhq_DropdownButton">▼</div>
-                                             <input type="text" name="seasons[<?php echo $season_id; ?>][episodes][<?php echo $episode_id; ?>][name]" value="<?php echo $episode_name; ?>" placeholder="Episode Name" />
+                                                <div class="animhq_DropdownButton">▼</div>
+                                                <input type="text" name="seasons[<?php echo $season_id; ?>][episodes][<?php echo $episode_id; ?>][name]" value="<?php echo $episode_name; ?>" placeholder="Episode Name" />
                                             </span>
+                                            <span>
+                                                <input type="checkbox" id="isFree<?php echo $episode_id; ?>" name="seasons[<?php echo $season_id; ?>][episodes][<?php echo $episode_id; ?>][isFree]" <?php echo($episode_isFree ? 'checked' : "" ); ?> > 
+                                                <label style="color:white;" for="isFree<?php echo $season_id; ?>">Free Content</label>
+                                            </span>
+                                            
                                             <input type="hidden" name="seasons[<?php echo $season_id; ?>][episodes][<?php echo $episode_id; ?>][id]" value="<?php echo $episode_id; ?>" />
                                         </div>
                                         <div class="animhq_Episode_body">
                                             <input type="text" name="seasons[<?php echo $season_id; ?>][episodes][<?php echo $episode_id; ?>][order]" value="<?php echo $episode_order; ?>" placeholder="Episode Order" />
                                             <input type="text" name="seasons[<?php echo $season_id; ?>][episodes][<?php echo $episode_id; ?>][quality]" value="<?php echo $episode_quality; ?>" placeholder="Episode Quality" />
-                                            <input type="text" name="seasons[<?php echo $season_id; ?>][episodes][<?php echo $episode_id; ?>][video]" value="<?php echo $episode_video; ?>" placeholder="Episode video" />
+                                            <input type="text" name="seasons[<?php echo $season_id; ?>][episodes][<?php echo $episode_id; ?>][video_720]" value="<?php echo $episode_video_720; ?>" placeholder="Episode Stream Video 720p" />
+                                            <input type="text" name="seasons[<?php echo $season_id; ?>][episodes][<?php echo $episode_id; ?>][video_1080]" value="<?php echo $episode_video_1080; ?>" placeholder="Episode Stream Video 1080p" />
+                                            <input type="text" name="seasons[<?php echo $season_id; ?>][episodes][<?php echo $episode_id; ?>][video_2k]" value="<?php echo $episode_video_2k; ?>" placeholder="Episode Stream Video 2k" />
+                                            <input type="text" name="seasons[<?php echo $season_id; ?>][episodes][<?php echo $episode_id; ?>][video_4k]" value="<?php echo $episode_video_4k; ?>" placeholder="Episode Stream Video 4k" />
                                         </div>
                                     </div>
 
@@ -183,6 +248,9 @@ function render_custom_tab_fields() {
                                 }
                             }
                             ?>
+
+                            </div>
+                           
                         </div>
                     </div>
                     <?php
@@ -203,19 +271,80 @@ function render_custom_tab_fields() {
         <div id="custom-tab" class="postbox postboxanimhhq" >
             <div class="postbox-header animhqPostHeader">
                 <h2 class="hndle"><span>Movie Details</span></h2>
+                <input type="checkbox" id="isFree" name="movie[isFree]" <?php echo ($movie->isFree ? 'checked' : ''); ?>> 
+                    <label for="isFree">Free Content</label>
             </div>
             <div class="inside">
                 <div class="animhq_Episode_body">
                     <?php if($movie) { ?><img src="<?php  echo($movie->cover); ?>" width="100" /> <?php } ?>
                     <Label>Movie Cover:</Label>
+                    
                     <input type="hidden" name="movie[id]" value="<?php echo($movie ? $movie->id : "");?>" />
                     <input type="hidden" name="movie[oldcover]" value="<?php echo($movie ? $movie->cover:"") ?>" />
                     <input type="file" name="movie[cover]" accept="image/*" />
                     <input type="text" name="movie[quality]" value="<?php echo($movie ? $movie->quality : ""); ?>" placeholder="Movie Quality" />
-                    <input type="text" name="movie[video]" value="<?php echo($movie ? $movie->video: ""); ?>" placeholder="Movie video URL" />
+                    <input type="text" name="movie[video_720]" value="<?php echo($movie ? $movie->video_720: ""); ?>" placeholder="Movie video 720p" />
+                    <input type="text" name="movie[video_1080]" value="<?php echo($movie ? $movie->video_1080: ""); ?>" placeholder="Movie video 1080p" />
+                    <input type="text" name="movie[video_2k]" value="<?php echo($movie ? $movie->video_2k: ""); ?>" placeholder="Movie video 2k" />
+                    <input type="text" name="movie[video_4k]" value="<?php echo($movie ? $movie->video_4k: ""); ?>" placeholder="Movie video 4k" />
                 </div>
             </div>
         </div>
+    <?php } else if($post->post_type == "pms-subscription") {
+        ?>
+            <div id="custom-tab" class="postbox postboxanimhhq" >
+                <div class="postbox-header animhqPostHeader">
+                    <h2 class="hndle"><span>AnimeHQ Plans Settings</span></h2>
+                    <div class="handle-actions animhq_Actions">
+                        <div class='animhq_addButton' id="animhqAddPlan">+ Plan</div>
+                    </div>
+                </div>
+                <div class="inside">
+                    <input type="hidden" id="maxPids" value="<?php echo $maxPIds; ?>" />
+                    <?php 
+
+                        $query = "SELECT * FROM ahq_plans";
+                        $stmt = $pdo->prepare($query);
+                        //$stmt->bindParam(':post_id', $post->ID, PDO::PARAM_INT);
+                        $stmt->execute();
+                        $plans = $stmt->fetchAll(PDO::FETCH_OBJ);
+                    if($plans) {
+                        foreach ($plans as $plan) {
+                            
+                        
+                    
+                    ?>
+                    <div class="animhq_Season_tab">
+                        <div class="animhq_Season_header">
+                            <span class="dropandInput">
+                                <div class="animhq_DropdownButton">▼</div>
+                                <input type="text" name="plans[<?php echo($plan->id); ?>][name]" value="<?php echo($plan->plan_name); ?>" placeholder="Plan Name" />
+                            </span>
+                            <input type="hidden" name="plans[<?php echo($plan->id); ?>][id]" value=<?php echo($plan->id); ?>"" />
+                        </div>
+                        <div class="animhq_Episode_body">
+                            <input type="text" name="plans[<?php echo($plan->id); ?>][screens]" value="<?php echo($plan->screens); ?>" placeholder="Number of Screens" />
+
+                            <lable for="candownload">Can Download </label>
+                            <input type="checkbox" id="candownload" name="plans[<?php echo($plan->id); ?>][candownload]" <?php echo($plan->candownload ? 'checked' : ''); ?> />
+
+                            <lable for="quality720">Have Quality 720p </label>
+                            <input type="checkbox" id="quality720" name="plans[<?php echo($plan->id); ?>][quality_720p]" <?php echo($plan->quality_720p ? 'checked' : ''); ?> />
+
+                            <lable for="quality1080">Have Quality 1080p </label>
+                            <input type="checkbox" id="quality1080" name="plans[<?php echo($plan->id); ?>][quality_1080]" <?php echo($plan->quality_1080 ? 'checked' : ''); ?> />
+
+                            <lable for="quality2k">Have Quality 2K </label>
+                            <input type="checkbox" id="quality2k" name="plans[<?php echo($plan->id); ?>][quality_2k]" <?php echo($plan->quality_2k ? 'checked' : ''); ?> />
+
+                            <lable for="quality4k">Have Quality 4K </label>
+                            <input type="checkbox" id="quality4k" name="plans[<?php echo($plan->id); ?>][quality_4k]" <?php echo($plan->quality_4k ? 'checked' : ''); ?> />
+                        </div>
+                    </div>
+                    <?php }} ?>
+                </div>
+            </div>
+        
     <?php }
 }
 
@@ -301,7 +430,26 @@ function save_season_episode_data($post_id) {
                     if (move_uploaded_file($tmpfile, $target_file)) {
                         // Set the season cover value to the target file path
                         $season_cover = $upload_dir['url'] . '/' . $unique_filename;
+                        
+                        $file_path = $season_cover;
+
+                        // Prepare the attachment data
+                        $attachment = array(
+                            'guid'           => $file_path,
+                            'post_title'     => basename($file_path),
+                            'post_status'    => 'inherit'
+                        );
+
+                        // Insert the attachment
+                        $attachment_id = wp_insert_attachment($attachment, $file_path);
+
+                        // Generate metadata for the attachment
+                        $attachment_data = wp_generate_attachment_metadata($attachment_id, $file_path);
+
+                        // Update the metadata for the attachment
+                        wp_update_attachment_metadata($attachment_id, $attachment_data);
                     }
+
                 }
             }
 
@@ -335,28 +483,40 @@ function save_season_episode_data($post_id) {
                 foreach ($episodes as $episode_data) {
                     $episode_id = isset($episode_data['id']) ? intval($episode_data['id']) : 0;
                     $episode_name = isset($episode_data['name']) ? sanitize_text_field($episode_data['name']) : '';
-                    $episode_video = isset($episode_data['video']) ? sanitize_text_field($episode_data['video']) : '';
+                    $episode_video_720 = isset($episode_data['video_720']) ? sanitize_text_field($episode_data['video_720']) : '';
+                    $episode_video_1080 = isset($episode_data['video_1080']) ? sanitize_text_field($episode_data['video_1080']) : '';
+                    $episode_video_2k = isset($episode_data['video_2k']) ? sanitize_text_field($episode_data['video_2k']) : '';
+                    $episode_video_4k = isset($episode_data['video_4k']) ? sanitize_text_field($episode_data['video_4k']) : '';
                     $episode_quality = isset($episode_data['quality']) ? sanitize_text_field($episode_data['quality']) : '';
                     $episode_order = isset($episode_data['order']) ? intval($episode_data['order']) : 0;
+                    $episode_isFree = isset($episode_data['isFree']) ? ($episode_data['isFree'] == 'on' ? 1 : 0):0;
 
                     if (checkExistingEpisode($episode_id)) {
-                        $query = "UPDATE episodes SET name = :episode_name, eorder = :episode_order, cover=:quality, video=:video WHERE id = :episode_id";
+                        $query = "UPDATE episodes SET name = :episode_name, isFree =:isFree , eorder = :episode_order, cover=:quality, video_720=:video_720, video_1080=:video_1080,video_2k=:video_2k,video_4k=:video_4k WHERE id = :episode_id";
                         $stmt = $pdo->prepare($query);
                         $stmt->bindParam(':episode_name', $episode_name, PDO::PARAM_STR);
                         $stmt->bindParam(':episode_order', $episode_order, PDO::PARAM_INT);
-                        $stmt->bindParam(':video', $episode_video, PDO::PARAM_STR);
+                        $stmt->bindParam(':video_720', $episode_video_720, PDO::PARAM_STR);
+                        $stmt->bindParam(':video_1080', $episode_video_1080, PDO::PARAM_STR);
+                        $stmt->bindParam(':video_2k', $episode_video_2k, PDO::PARAM_STR);
+                        $stmt->bindParam(':video_4k', $episode_video_4k, PDO::PARAM_STR);
                         $stmt->bindParam(':quality', $episode_quality, PDO::PARAM_STR);
                         $stmt->bindParam(':episode_id', $episode_id, PDO::PARAM_INT);
+                        $stmt->bindParam(':isFree', $episode_isFree, PDO::PARAM_BOOL);
                         $stmt->execute();
                     } else {
-                        $query = "INSERT INTO episodes (id, name, video, seasonId, eorder,cover) VALUES (:episode_id ,:episode_name,:video ,:season_id, :episode_order, :quality)";
+                        $query = "INSERT INTO episodes (isFree, id, name, video_720, video_1080,video_2k,video_4k, seasonId, eorder,cover) VALUES (:isFree,:episode_id ,:episode_name,:video_720 ,:video_1080 ,:video_2k ,:video_4k ,:season_id, :episode_order, :quality)";
                         $stmt = $pdo->prepare($query);
                         $stmt->bindParam(':episode_name', $episode_name, PDO::PARAM_STR);
-                        $stmt->bindParam(':video', $episode_video, PDO::PARAM_STR);
+                        $stmt->bindParam(':video_720', $episode_video_720, PDO::PARAM_STR);
+                        $stmt->bindParam(':video_1080', $episode_video_1080, PDO::PARAM_STR);
+                        $stmt->bindParam(':video_2k', $episode_video_2k, PDO::PARAM_STR);
+                        $stmt->bindParam(':video_4k', $episode_video_4k, PDO::PARAM_STR);
                         $stmt->bindParam(':quality', $episode_quality, PDO::PARAM_STR);
                         $stmt->bindParam(':episode_id', $episode_id, PDO::PARAM_INT);
                         $stmt->bindParam(':season_id', $season_id, PDO::PARAM_INT);
                         $stmt->bindParam(':episode_order', $episode_order, PDO::PARAM_INT);
+                        $stmt->bindParam(':isFree', $episode_isFree, PDO::PARAM_BOOL);
                         $stmt->execute();
                     }
                 }
@@ -388,31 +548,180 @@ function save_season_episode_data($post_id) {
                 if (move_uploaded_file($tmpfile, $target_file)) {
                     // Set the season cover value to the target file path
                     $movie_cover = $upload_dir['url'] . '/' . $unique_filename;
+                    $file_path = $movie_cover;
+
+                        // Prepare the attachment data
+                        $attachment = array(
+                            'guid'           => $file_path,
+                            'post_title'     => basename($file_path),
+                            'post_status'    => 'inherit'
+                        );
+
+                        $attach_id = wp_insert_attachment( $attachment, $file_path, 37 );
+                        $attach_data = wp_generate_attachment_metadata( $attach_id, $filename );
+                        wp_update_attachment_metadata( $attach_id,  $attach_data );
                 }
             }
         }
 
         if($movie_cover == '') $movie_cover = $movie['oldcover'];
-
+        $movie_is_free = isset($movie['isFree']) ? ($movie['isFree'] == 'on' ? 1 : 0):0;
         if (checkExistingMovie($movie['id'])) {
              
-            $query = "UPDATE movies SET cover=:cover, video = :video, quality = :quality WHERE id = :movie_id";
+            $query = "UPDATE movies SET isFree=:isFree, cover=:cover, video_720 = :video_720,video_1080 = :video_1080,video_2k = :video_2k,video_4k = :video_4k, quality = :quality WHERE id = :movie_id";
             $stmt = $pdo->prepare($query);
             $stmt->bindParam(':cover', $movie_cover, PDO::PARAM_STR);
             $stmt->bindParam(':quality', $movie['quality'], PDO::PARAM_STR);
-            $stmt->bindParam(':video', $movie['video'], PDO::PARAM_STR);
+            $stmt->bindParam(':video_720', $movie['video_720'], PDO::PARAM_STR);
+            $stmt->bindParam(':video_1080', $movie['video_1080'], PDO::PARAM_STR);
+            $stmt->bindParam(':video_2k', $movie['video_2k'], PDO::PARAM_STR);
+            $stmt->bindParam(':video_4k', $movie['video_4k'], PDO::PARAM_STR);
+            $stmt->bindParam(':isFree',$movie_is_free , PDO::PARAM_BOOL);
             $stmt->bindParam(':movie_id', $movie['id'], PDO::PARAM_INT);
+
             $stmt->execute();
 
         } else {
-            $query = "INSERT INTO movies (postId, video, quality , cover) VALUES (:postId ,:video, :quality, :cover)";
+            $query = "INSERT INTO movies (postId, video_720, video_1080,video_2k,video_4k, quality , cover, isFree) VALUES (:postId ,:video_720,:video_1080,:video_2k,:video_4k, :quality, :cover, :isFree)";
             $stmt = $pdo->prepare($query);
-            $stmt->bindParam(':video', $movie['video'], PDO::PARAM_STR);
             $stmt->bindParam(':postId', $post_id, PDO::PARAM_INT);
+            $stmt->bindParam(':isFree', $movie_is_free , PDO::PARAM_BOOL);
             $stmt->bindParam(':quality', $movie['quality'], PDO::PARAM_STR);
+            $stmt->bindParam(':video_720', $movie['video_720'], PDO::PARAM_STR);
+            $stmt->bindParam(':video_1080', $movie['video_1080'], PDO::PARAM_STR);
+            $stmt->bindParam(':video_2k', $movie['video_2k'], PDO::PARAM_STR);
+            $stmt->bindParam(':video_4k', $movie['video_4k'], PDO::PARAM_STR);
             $stmt->bindParam(':cover', $movie_cover, PDO::PARAM_STR);
             $stmt->execute();   
         }
     }
+    if(isset($_POST['plans'])){
+        $plans = $_POST['plans'];
+        foreach ($plans as $plan) {
+            $planId = isset($plan['id']) ? intval($plan['id']) : 0;
+            $plan_name = isset($plan['name']) ? sanitize_text_field($plan['name']) : '';
+            $plan_720 = isset($plan['video_720']) ? sanitize_text_field($plan['video_720']) : '';
+            $plan_1080 = isset($plan['video_1080']) ? sanitize_text_field($plan['video_1080']) : '';
+            $plan_2k = isset($plan['video_2k']) ? sanitize_text_field($plan['video_2k']) : '';
+            $plan_4k = isset($plan['video_4k']) ? sanitize_text_field($plan['video_4k']) : '';
+            $candownload = isset($plan['candownload']) ? ($plan['candownload'] == 'on' ? 1 : 0):0;
+            $screens = isset($plan['screens']) ? intval($plan['screens']) : 0;
+
+            if (checkExistingEpisode($episode_id)) {
+                $query = "UPDATE episodes SET name = :episode_name, isFree =:isFree , eorder = :episode_order, cover=:quality, video_720=:video_720, video_1080=:video_1080,video_2k=:video_2k,video_4k=:video_4k WHERE id = :episode_id";
+                $stmt = $pdo->prepare($query);
+                $stmt->bindParam(':episode_name', $episode_name, PDO::PARAM_STR);
+                $stmt->bindParam(':episode_order', $episode_order, PDO::PARAM_INT);
+                $stmt->bindParam(':video_720', $episode_video_720, PDO::PARAM_STR);
+                $stmt->bindParam(':video_1080', $episode_video_1080, PDO::PARAM_STR);
+                $stmt->bindParam(':video_2k', $episode_video_2k, PDO::PARAM_STR);
+                $stmt->bindParam(':video_4k', $episode_video_4k, PDO::PARAM_STR);
+                $stmt->bindParam(':quality', $episode_quality, PDO::PARAM_STR);
+                $stmt->bindParam(':episode_id', $episode_id, PDO::PARAM_INT);
+                $stmt->bindParam(':isFree', $episode_isFree, PDO::PARAM_BOOL);
+                $stmt->execute();
+            } else {
+                $query = "INSERT INTO episodes (isFree, id, name, video_720, video_1080,video_2k,video_4k, seasonId, eorder,cover) VALUES (:isFree,:episode_id ,:episode_name,:video_720 ,:video_1080 ,:video_2k ,:video_4k ,:season_id, :episode_order, :quality)";
+                $stmt = $pdo->prepare($query);
+                $stmt->bindParam(':episode_name', $episode_name, PDO::PARAM_STR);
+                $stmt->bindParam(':video_720', $episode_video_720, PDO::PARAM_STR);
+                $stmt->bindParam(':video_1080', $episode_video_1080, PDO::PARAM_STR);
+                $stmt->bindParam(':video_2k', $episode_video_2k, PDO::PARAM_STR);
+                $stmt->bindParam(':video_4k', $episode_video_4k, PDO::PARAM_STR);
+                $stmt->bindParam(':quality', $episode_quality, PDO::PARAM_STR);
+                $stmt->bindParam(':episode_id', $episode_id, PDO::PARAM_INT);
+                $stmt->bindParam(':season_id', $season_id, PDO::PARAM_INT);
+                $stmt->bindParam(':episode_order', $episode_order, PDO::PARAM_INT);
+                $stmt->bindParam(':isFree', $episode_isFree, PDO::PARAM_BOOL);
+                $stmt->execute();
+            }
+        }
+    }
 }
 add_action('save_post', 'save_season_episode_data');
+
+function getScreens($username) {
+    global $wpdb, $pdo;
+    $query = "SELECT screens FROM screens where username = :username";
+    $stmt = $pdo->prepare($query);
+    $stmt->bindParam(':username', $username, PDO::PARAM_INT);
+    $stmt->execute();
+    if($stmt->rowCount() > 0) return $stmt->fetch(PDO::FETCH_OBJ);
+    return 1;
+}
+
+function getLoggins($username) {
+    global $wpdb, $pdo;
+    $query = "SELECT * FROM loggins where username = :username";
+    $stmt = $pdo->prepare($query);
+    $stmt->bindParam(':username', $username, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->rowCount();
+}
+
+function LoginUser($user) {
+    global $wpdb, $pdo;
+    $ip_address = $_SERVER['REMOTE_ADDR'];
+    $query = "INSERT INTO loggins(username , user_id , ipaddress) VALUES (:username , :user_id, :ipaddress)";
+    $stmt = $pdo->prepare($query);
+    $stmt->bindParam(':username', $user->user_login, PDO::PARAM_STR);
+    $stmt->bindParam(':user_id', $user->ID, PDO::PARAM_INT);
+    $stmt->bindParam(':ipaddress', $ip_address, PDO::PARAM_STR);
+    $stmt->execute();
+    $logId = $pdo->lastInsertId();
+    createLogCookie($logId);
+}
+
+
+
+function LogOutUser($logId) {
+    global $wpdb, $pdo;
+    $ip_address = $_SERVER['REMOTE_ADDR'];
+    $query = "DELETE FROM loggins where id = :logId";
+    $stmt = $pdo->prepare($query);
+    $stmt->bindParam(':logId', $logId, PDO::PARAM_INT);
+    $stmt->execute();
+    
+}
+ 
+
+function checkScreens_login_function($username, $password) {
+    $screens = getScreens($username)->screens;
+
+    if (getLoggins($username) == $screens) {
+
+        wp_die(__(' هذا الاحساب وصل لعدد الشاشات المتاحة , يجب تسجيل الخروج من أحد الحسابات لتتمكن من الدخول'));
+       
+        exit;
+    }
+    
+    // If the condition is not met, return the username and password to continue with the login process
+    return [$username, $password];
+}
+add_filter('wp_authenticate', 'checkScreens_login_function', 10, 2);
+
+
+function custom_login_function( $user_login, $user ) {
+    LoginUser($user);
+}
+
+function member_logout_function() {
+    $current_user = wp_get_current_user();
+    if (isset($_COOKIE['logId'])) {
+        $cookie_value = $_COOKIE['logId'];
+        LogOutUser($cookie_value);
+    }
+}
+
+add_filter('wp_authenticate', 'checkScreens_login_function', 10, 2);
+add_action( 'wp_login', 'custom_login_function', 10, 2 );
+add_action('clear_auth_cookie', 'member_logout_function');
+
+
+function createLogCookie($logId) {
+    $cookie_name = 'logId';
+    $cookie_value = $logId;
+    $expiration_time = time() + (86400 * 30); // 30 days
+
+    setcookie($cookie_name, $cookie_value, $expiration_time, '/');
+}
