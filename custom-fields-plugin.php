@@ -124,6 +124,7 @@ function render_custom_tab_fields() {
     // Output custom fields
     $maxSIds = 0;
     $maxEIds = 0;
+    $maxPIds = 0;
     
     // get max Season id
     $query = "SELECT id FROM seasons order by id DESC LIMIT 1";
@@ -597,47 +598,57 @@ function save_season_episode_data($post_id) {
     }
     if(isset($_POST['plans'])){
         $plans = $_POST['plans'];
+        //print_r($plans);
+       //die("");
         foreach ($plans as $plan) {
             $planId = isset($plan['id']) ? intval($plan['id']) : 0;
             $plan_name = isset($plan['name']) ? sanitize_text_field($plan['name']) : '';
-            $plan_720 = isset($plan['video_720']) ? sanitize_text_field($plan['video_720']) : '';
-            $plan_1080 = isset($plan['video_1080']) ? sanitize_text_field($plan['video_1080']) : '';
-            $plan_2k = isset($plan['video_2k']) ? sanitize_text_field($plan['video_2k']) : '';
-            $plan_4k = isset($plan['video_4k']) ? sanitize_text_field($plan['video_4k']) : '';
+            $plan_720 = isset($plan['quality_720p']) ? ($plan['quality_720p'] == 'on' ? 1 : 0):0;
+            $plan_1080 = isset($plan['quality_1080']) ? ($plan['quality_1080'] == 'on' ? 1 : 0):0;
+            $plan_2k = isset($plan['quality_2k']) ? ($plan['quality_2k'] == 'on' ? 1 : 0):0;
+            $plan_4k = isset($plan['quality_4k']) ? ($plan['quality_4k'] == 'on' ? 1 : 0):0;
             $candownload = isset($plan['candownload']) ? ($plan['candownload'] == 'on' ? 1 : 0):0;
             $screens = isset($plan['screens']) ? intval($plan['screens']) : 0;
 
-            if (checkExistingEpisode($episode_id)) {
-                $query = "UPDATE episodes SET name = :episode_name, isFree =:isFree , eorder = :episode_order, cover=:quality, video_720=:video_720, video_1080=:video_1080,video_2k=:video_2k,video_4k=:video_4k WHERE id = :episode_id";
+            if (checkExistingPlan($planId)) {
+                $query = "UPDATE ahq_plans SET plan_name = :plan_name, quality_720p =:plan_720 ,quality_1080 = :plan_1080, quality_2k=:plan_2k, quality_4k=:plan_4k, candownload=:candownload , screens = :screens WHERE id = :plan_id";
                 $stmt = $pdo->prepare($query);
-                $stmt->bindParam(':episode_name', $episode_name, PDO::PARAM_STR);
-                $stmt->bindParam(':episode_order', $episode_order, PDO::PARAM_INT);
-                $stmt->bindParam(':video_720', $episode_video_720, PDO::PARAM_STR);
-                $stmt->bindParam(':video_1080', $episode_video_1080, PDO::PARAM_STR);
-                $stmt->bindParam(':video_2k', $episode_video_2k, PDO::PARAM_STR);
-                $stmt->bindParam(':video_4k', $episode_video_4k, PDO::PARAM_STR);
-                $stmt->bindParam(':quality', $episode_quality, PDO::PARAM_STR);
-                $stmt->bindParam(':episode_id', $episode_id, PDO::PARAM_INT);
-                $stmt->bindParam(':isFree', $episode_isFree, PDO::PARAM_BOOL);
+                $stmt->bindParam(':plan_id', $planId, PDO::PARAM_INT);
+                $stmt->bindParam(':plan_name', $plan_name, PDO::PARAM_STR);
+                $stmt->bindParam(':plan_720', $plan_720, PDO::PARAM_BOOL);
+                $stmt->bindParam(':plan_1080', $plan_1080, PDO::PARAM_BOOL);
+                $stmt->bindParam(':plan_2k', $plan_2k, PDO::PARAM_BOOL);
+                $stmt->bindParam(':plan_4k', $plan_4k, PDO::PARAM_BOOL);
+                $stmt->bindParam(':candownload', $candownload, PDO::PARAM_BOOL);
+                $stmt->bindParam(':screens', $screens, PDO::PARAM_INT);
                 $stmt->execute();
             } else {
-                $query = "INSERT INTO episodes (isFree, id, name, video_720, video_1080,video_2k,video_4k, seasonId, eorder,cover) VALUES (:isFree,:episode_id ,:episode_name,:video_720 ,:video_1080 ,:video_2k ,:video_4k ,:season_id, :episode_order, :quality)";
+                $query = "INSERT INTO ahq_plans (plan_name, id,  quality_720p, quality_1080,quality_2k,quality_4k, screens, candownload) VALUES (:plan_name,:plan_id ,:plan_720,:plan_1080 ,:plan_2k ,:plan_4k ,:screens , :candownload)";
                 $stmt = $pdo->prepare($query);
-                $stmt->bindParam(':episode_name', $episode_name, PDO::PARAM_STR);
-                $stmt->bindParam(':video_720', $episode_video_720, PDO::PARAM_STR);
-                $stmt->bindParam(':video_1080', $episode_video_1080, PDO::PARAM_STR);
-                $stmt->bindParam(':video_2k', $episode_video_2k, PDO::PARAM_STR);
-                $stmt->bindParam(':video_4k', $episode_video_4k, PDO::PARAM_STR);
-                $stmt->bindParam(':quality', $episode_quality, PDO::PARAM_STR);
-                $stmt->bindParam(':episode_id', $episode_id, PDO::PARAM_INT);
-                $stmt->bindParam(':season_id', $season_id, PDO::PARAM_INT);
-                $stmt->bindParam(':episode_order', $episode_order, PDO::PARAM_INT);
-                $stmt->bindParam(':isFree', $episode_isFree, PDO::PARAM_BOOL);
+                $stmt->bindParam(':plan_id', $planId, PDO::PARAM_INT);
+                $stmt->bindParam(':plan_name', $plan_name, PDO::PARAM_STR);
+                $stmt->bindParam(':plan_720', $plan_720, PDO::PARAM_BOOL);
+                $stmt->bindParam(':plan_1080', $plan_1080, PDO::PARAM_BOOL);
+                $stmt->bindParam(':plan_2k', $plan_2k, PDO::PARAM_BOOL);
+                $stmt->bindParam(':plan_4k', $plan_4k, PDO::PARAM_BOOL);
+                $stmt->bindParam(':candownload', $candownload, PDO::PARAM_BOOL);
+                $stmt->bindParam(':screens', $screens, PDO::PARAM_INT);
                 $stmt->execute();
             }
         }
     }
 }
+
+function checkExistingPlan($pid) {
+    global $wpdb, $pdo;
+    $query = "SELECT * FROM ahq_plans where id = :plan_id";
+    $stmt = $pdo->prepare($query);
+    $stmt->bindParam(':plan_id', $pid, PDO::PARAM_INT);
+    $stmt->execute();
+    if($stmt->rowCount() > 0) return true;
+    return false;  
+}
+
 add_action('save_post', 'save_season_episode_data');
 
 function getScreens($username) {
@@ -688,7 +699,7 @@ function LogOutUser($logId) {
 function checkScreens_login_function($username, $password) {
     $screens = getScreens($username)->screens;
 
-    if (getLoggins($username) == $screens) {
+    if (getLoggins($username) >= $screens) {
 
         wp_die(__(' هذا الاحساب وصل لعدد الشاشات المتاحة , يجب تسجيل الخروج من أحد الحسابات لتتمكن من الدخول'));
        

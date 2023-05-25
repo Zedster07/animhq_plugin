@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="animhq_DropdownButton">▼</div>
             <input type="text" name="plans[${PlanId}][name]" placeholder="Plan Name" />
         </span>
-        <input type="hidden" name="plans[${PlanId}][id]" />
+        <input type="hidden" name="plans[${PlanId}][id]" value="${PlanId}" />
     </div>
     <div class="animhq_Episode_body">
         <input type="text" name="plans[${PlanId}][screens]" placeholder="Number of Screens" />
