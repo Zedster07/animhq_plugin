@@ -433,9 +433,11 @@ function save_season_episode_data($post_id) {
                         $season_cover = $upload_dir['url'] . '/' . $unique_filename;
                         
                         $file_path = $season_cover;
+                        $wp_filetype = wp_check_filetype( $file_path, null );
 
                         // Prepare the attachment data
                         $attachment = array(
+                            'post_mime_type' => $wp_filetype['type'],
                             'guid'           => $file_path,
                             'post_title'     => basename($file_path),
                             'post_status'    => 'inherit'
@@ -552,7 +554,11 @@ function save_season_episode_data($post_id) {
                     $file_path = $movie_cover;
 
                         // Prepare the attachment data
+                         $wp_filetype = wp_check_filetype( $file_path, null );
+
+                        // Prepare the attachment data
                         $attachment = array(
+                            'post_mime_type' => $wp_filetype['type'],
                             'guid'           => $file_path,
                             'post_title'     => basename($file_path),
                             'post_status'    => 'inherit'
@@ -658,7 +664,7 @@ function getScreens($username) {
     $stmt->bindParam(':username', $username, PDO::PARAM_INT);
     $stmt->execute();
     if($stmt->rowCount() > 0) return $stmt->fetch(PDO::FETCH_OBJ);
-    return 1;
+    return null;
 }
 
 function getLoggins($username) {
@@ -692,16 +698,25 @@ function LogOutUser($logId) {
     $stmt = $pdo->prepare($query);
     $stmt->bindParam(':logId', $logId, PDO::PARAM_INT);
     $stmt->execute();
+    $expirationTime = time() - 3600; // Set the expiration time to one hour ago
+
+    // Set the cookie with the past expiration time
+    setcookie("logId", "", $expirationTime, '/');
     
 }
  
 
 function checkScreens_login_function($username, $password) {
-    $screens = getScreens($username)->screens;
+    $scr = getScreens($username);
+    $screens = $scr ? $scr->screens :1;
+    if (isset($_COOKIE['logId'])) {
+        $cookie_value = $_COOKIE['logId'];
+        LogOutUser($cookie_value);
+    }
 
     if (getLoggins($username) >= $screens) {
 
-        wp_die(__(' هذا الاحساب وصل لعدد الشاشات المتاحة , يجب تسجيل الخروج من أحد الحسابات لتتمكن من الدخول'));
+        wp_die(__(' هذا الاحساب وصل لعدد الشاشات المتاحة , يجب تسجيل الخروج من أحد الشاشات لتتمكن من الدخول'));
        
         exit;
     }
